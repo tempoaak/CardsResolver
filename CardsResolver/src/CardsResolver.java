@@ -41,30 +41,41 @@ public class CardsResolver {
 	    // 147, 219, 291, 363, 435
         loadTemplates();
         if (mapTempls.isEmpty()) {
-        	System.out.println("Øàáëîíû íå íàéäåíû");
+        	System.out.println("ÐžÑ‚ÑÑƒÑ‚ÑÑ‚Ð²ÑƒÑŽÑ‚ ÑˆÐ°Ð±Ð»Ð¾Ð½Ñ‹");
         	System.exit(0);
         }
         String dirScan = args.length == 0? DEFAULT_INPUT_DIR: Optional.ofNullable(args[0]).orElse(DEFAULT_INPUT_DIR);
         File[] arrlf = new File(dirScan).listFiles((d, n) -> n.endsWith(".png")); 
         for (File inFile : arrlf) {
     		BufferedImage img1 = ImageIO.read(inFile);	
-    		//int px = img1.getRGB(185,649) ;
-    		img1 = img1.getSubimage(147, 590, 26, 28);
-    		changeColor(img1, 120,120,120,255,255,255);
-    		img1 = OtsuBinarize.toGray(img1);
-    		img1 = OtsuBinarize.binarize(img1);
-    		File outputfile = new File(inFile.getName()+".gray.png");
-    		ImageIO.write(img1, "png", outputfile);
+    		
     		//changeColor(img1, 16,16,18,35,35,38);
     		//changeColor(img1, 96,34,34,205,73,73);
     		for(Map.Entry<String, BufferedImage> entry : mapTempls.entrySet()) {
                 BufferedImage img2 = entry.getValue(); 
                 img2 = OtsuBinarize.toGray(img2);
                 img2 = OtsuBinarize.binarize(img2);
-        		File outputfile1 = new File(entry.getKey()+".gray.png");
-        		ImageIO.write(img2, "png", outputfile1);
-                Double p = getDifferencePercent(img1, img2);
+                BufferedImage img11 = img1.getSubimage(153, 592, img2.getWidth(), img2.getHeight());
+                for (int i = 153; i < 168; i++) {
+                    int px = img1.getRGB(i,595) ;
+                    System.out.println(Integer.toHexString(px));                	
+                }
+                changeColor(img11, 120,120,120,255,255,255);
+        		changeColor(img11, 77,77,78,255,255,255);
+        		changeColor(img11, 76,76,77,255,255,255);
+        		File outputfile = new File(inFile.getName()+".gray.png");
+        		ImageIO.write(img11, "png", outputfile);       		
+        		img11 = OtsuBinarize.toGray(img11);
+        		img11 = OtsuBinarize.binarize(img11);
+        		//File outputfile = new File(inFile.getName()+".gray.png");
+        		//ImageIO.write(img11, "png", outputfile);
+
+                
+                //File outputfile1 = new File(entry.getKey()+".gray.png");
+        		//ImageIO.write(img2, "png", outputfile1);
+                Double p = getDifferencePercent(img11, img2);
                 System.out.println("diff percent: " + inFile.getName()+ " - " + entry.getKey()+ " - " + p.intValue());
+                
     		}
 		}
 
@@ -72,7 +83,7 @@ public class CardsResolver {
 
 		
 
-		//System.out.println(Integer.toHexString(px));
+		
 		//File outputfile = new File("img1.png");
 		//ImageIO.write(img1, "png", outputfile);
     }
