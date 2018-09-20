@@ -1,4 +1,5 @@
 import java.awt.image.BufferedImage;
+import java.awt.image.RasterFormatException;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -13,23 +14,28 @@ import javax.imageio.ImageIO;
 public class CardsResolver {
     
 	private static final String DEFAULT_INPUT_DIR = System.getProperty("user.dir");
+	private static final String RANK_TEMPL_DIR = "RankTemplates//";
+	private static final String SUITS_TEMPL_DIR = "SuitsTemplates//";
+	private static final int IMAGE_WIDTH = 636;
+	private static final int IMAGE_HEIGHT = 1166;
 	private static final int ALLOW_RANK_SCALE = 15;
 	private static final int ALLOW_SUITS_SCALE = 5;
-	private static final int[] ARRAY_OF_CARD_POSITION_X = {142, 214, 285};
+	private static final int[] ARRAY_OF_CARD_POSITION_X = {142, 214, 285, 357, 428};
 	private static final int OFFSET_OF_CARD_RANK_X = 11;
 	private static final int OFFSET_OF_CARD_SUITS_X = 28;
 	private static final int CARD_POSITION_RANK_Y = 592;
 	private static final int CARD_POSITION_SUITS_Y = 634;
-    private static Map<String, BufferedImage> mapTempls = new HashMap<>();
+    private static Map<String, BufferedImage> mapRankTempls = new HashMap<>();
+    private static Map<String, BufferedImage> mapSuitsTempls = new HashMap<>();
 
-    private static void loadTemplates()  {
-		File dirTempls = new File("RankTemplates//");
+    private static Map<String, BufferedImage> loadTemplates(String dir)  {
+		File dirTempls = new File(dir);
 		File[] filesTempls = dirTempls.listFiles((d, n) -> n.endsWith(".png"));
-		mapTempls = Arrays.asList(filesTempls).
+		Map<String, BufferedImage> mapTempls = 
+				    Arrays.asList(filesTempls).
 				                      stream().
 				                      collect(Collectors.
-				                    		  toMap(f -> f.getName().replaceFirst("[.][^.]+$", "")
-				                    				  ,
+				                    		  toMap(f -> f.getName().replaceFirst("[.][^.]+$", ""),
 													f -> {
 														  try 
 															 { 
@@ -40,36 +46,47 @@ public class CardsResolver {
 														  }
 													)
 					                    	  );
+		return mapTempls;
     } 
  
     public static void main(String[] args) throws IOException {
         // https://rosettacode.org/mw/images/3/3c/Lenna50.jpg
         // https://rosettacode.org/mw/images/b/b6/Lenna100.jpg
 	    // 147, 219, 291, 363, 435
-        loadTemplates();
-        if (mapTempls.isEmpty()) {
-        	System.out.println("Отсутствуют шаблоны");
+    	mapRankTempls = loadTemplates(RANK_TEMPL_DIR);
+        if (mapRankTempls.isEmpty()) {
+        	System.out.println("Отсутствуют шаблоны рангов карт ");
         	System.exit(0);
-        }
+        };
+        mapSuitsTempls = loadTemplates(SUITS_TEMPL_DIR);
+        if (mapRankTempls.isEmpty()) {
+        	System.out.println("Отсутствуют шаблоны мастей карт");
+        	System.exit(0);
+        }        
         String dirScan = args.length == 0? DEFAULT_INPUT_DIR: Optional.ofNullable(args[0]).orElse(DEFAULT_INPUT_DIR);
-        File[] arrlf = new File(dirScan).listFiles((d, n) -> n.endsWith(".png")); 
+        File[] arrlf = new File(dirScan).listFiles((d, n) -> n.endsWith(".png"));
+        Double pd;
         for (File inFile : arrlf) {
     		BufferedImage img1 = ImageIO.read(inFile);
+            if (img1.getWidth()!= IMAGE_WIDTH || img1.getHeight() != IMAGE_HEIGHT){
+            	System.out.println("неверный размерисходного изображения в файле "+inFile.getName());
+            	continue;
+            }
     		StringBuilder foundCards= new StringBuilder();
     		//int percentDiff;
     		//changeColor(img1, 16,16,18,35,35,38);
     		//changeColor(img1, 96,34,34,205,73,73);
-    		for(Map.Entry<String, BufferedImage> entry : mapTempls.entrySet()) {
+    		for(Map.Entry<String, BufferedImage> entry : mapRankTempls.entrySet()) {
                 BufferedImage img2 = entry.getValue(); 
                 img2 = OtsuBinarize.toGray(img2);
                 img2 = OtsuBinarize.binarize(img2);
                 //File outputfile1 = new File(entry.getKey()+".gray.png");
         		//ImageIO.write(img2, "png", outputfile1);
-                for(int cardNum : ARRAY_OF_CARD_POSITION_X) {
-	                BufferedImage img11 = img1.getSubimage(cardNum+OFFSET_OF_CARD_RANK_X, 
-	                									   CARD_POSITION_RANK_Y, 
-	                									   img2.getWidth(), 
-	                									   img2.getHeight());
+                for(int cardNum = 0; cardNum < ARRAY_OF_CARD_POSITION_X.length; cardNum++) {
+    	            BufferedImage img11 = img1.getSubimage(ARRAY_OF_CARD_POSITION_X[cardNum]+OFFSET_OF_CARD_RANK_X, 
+														   CARD_POSITION_RANK_Y, 
+														   img2.getWidth(), 
+														   img2.getHeight());
 	                /*for (int i = 153; i < 168; i++) {
 	                    int px = img1.getRGB(i,595) ;
 	                    System.out.println(Integer.toHexString(px));                	
@@ -85,8 +102,8 @@ public class CardsResolver {
 	        		//ImageIO.write(img11, "png", outputfile);
 	
 	                
-	                Double p = getDifferencePercent(img11, img2);
-	                if (p.intValue() <= ALLOW_RANK_SCALE){
+	                pd = getDifferencePercent(img11, img2);
+	                if (pd.intValue() <= ALLOW_RANK_SCALE){
 	                	foundCards.append(entry.getKey()); 
 	                	//percentDiff = p.intValue();
 	                }
@@ -97,7 +114,7 @@ public class CardsResolver {
 
 		}
 
-		
+
 
 		
 
