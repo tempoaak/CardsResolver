@@ -13,10 +13,17 @@ import javax.imageio.ImageIO;
 public class CardsResolver {
     
 	private static final String DEFAULT_INPUT_DIR = System.getProperty("user.dir");
+	private static final int ALLOW_RANK_SCALE = 15;
+	private static final int ALLOW_SUITS_SCALE = 5;
+	private static final int[] ARRAY_OF_CARD_POSITION_X = {142, 214, 285};
+	private static final int OFFSET_OF_CARD_RANK_X = 11;
+	private static final int OFFSET_OF_CARD_SUITS_X = 28;
+	private static final int CARD_POSITION_RANK_Y = 592;
+	private static final int CARD_POSITION_SUITS_Y = 634;
     private static Map<String, BufferedImage> mapTempls = new HashMap<>();
 
     private static void loadTemplates()  {
-		File dirTempls = new File("Templates//");
+		File dirTempls = new File("RankTemplates//");
 		File[] filesTempls = dirTempls.listFiles((d, n) -> n.endsWith(".png"));
 		mapTempls = Arrays.asList(filesTempls).
 				                      stream().
@@ -47,36 +54,47 @@ public class CardsResolver {
         String dirScan = args.length == 0? DEFAULT_INPUT_DIR: Optional.ofNullable(args[0]).orElse(DEFAULT_INPUT_DIR);
         File[] arrlf = new File(dirScan).listFiles((d, n) -> n.endsWith(".png")); 
         for (File inFile : arrlf) {
-    		BufferedImage img1 = ImageIO.read(inFile);	
-    		
+    		BufferedImage img1 = ImageIO.read(inFile);
+    		StringBuilder foundCards= new StringBuilder();
+    		//int percentDiff;
     		//changeColor(img1, 16,16,18,35,35,38);
     		//changeColor(img1, 96,34,34,205,73,73);
     		for(Map.Entry<String, BufferedImage> entry : mapTempls.entrySet()) {
                 BufferedImage img2 = entry.getValue(); 
                 img2 = OtsuBinarize.toGray(img2);
                 img2 = OtsuBinarize.binarize(img2);
-                BufferedImage img11 = img1.getSubimage(153, 592, img2.getWidth(), img2.getHeight());
-                for (int i = 153; i < 168; i++) {
-                    int px = img1.getRGB(i,595) ;
-                    System.out.println(Integer.toHexString(px));                	
-                }
-                changeColor(img11, 120,120,120,255,255,255);
-        		changeColor(img11, 77,77,78,255,255,255);
-        		changeColor(img11, 76,76,77,255,255,255);
-        		File outputfile = new File(inFile.getName()+".gray.png");
-        		ImageIO.write(img11, "png", outputfile);       		
-        		img11 = OtsuBinarize.toGray(img11);
-        		img11 = OtsuBinarize.binarize(img11);
-        		//File outputfile = new File(inFile.getName()+".gray.png");
-        		//ImageIO.write(img11, "png", outputfile);
-
-                
                 //File outputfile1 = new File(entry.getKey()+".gray.png");
         		//ImageIO.write(img2, "png", outputfile1);
-                Double p = getDifferencePercent(img11, img2);
-                System.out.println("diff percent: " + inFile.getName()+ " - " + entry.getKey()+ " - " + p.intValue());
+                for(int cardNum : ARRAY_OF_CARD_POSITION_X) {
+	                BufferedImage img11 = img1.getSubimage(cardNum+OFFSET_OF_CARD_RANK_X, 
+	                									   CARD_POSITION_RANK_Y, 
+	                									   img2.getWidth(), 
+	                									   img2.getHeight());
+	                /*for (int i = 153; i < 168; i++) {
+	                    int px = img1.getRGB(i,595) ;
+	                    System.out.println(Integer.toHexString(px));                	
+	                }*/
+	                changeColor(img11, 120,120,120,255,255,255);
+	        		//changeColor(img11, 77,77,78,255,255,255);
+	        		//changeColor(img11, 76,76,77,255,255,255);
+	        		//File outputfile = new File(inFile.getName()+".gray.png");
+	        		//ImageIO.write(img11, "png", outputfile);       		
+	        		img11 = OtsuBinarize.toGray(img11);
+	        		img11 = OtsuBinarize.binarize(img11);
+	        		//File outputfile = new File(inFile.getName()+cardNum+".gray.png");
+	        		//ImageIO.write(img11, "png", outputfile);
+	
+	                
+	                Double p = getDifferencePercent(img11, img2);
+	                if (p.intValue() <= ALLOW_RANK_SCALE){
+	                	foundCards.append(entry.getKey()); 
+	                	//percentDiff = p.intValue();
+	                }
+        		}
                 
     		}
+        	System.out.println(inFile.getName()+ " - " + foundCards);                	
+
 		}
 
 		
