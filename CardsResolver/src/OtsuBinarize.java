@@ -50,7 +50,7 @@ public class OtsuBinarize {
     }
  
     // The luminance method
-    public static BufferedImage toGray(BufferedImage original) {
+    private static BufferedImage toGray(BufferedImage original) {
  
         int alpha, red, green, blue;
         int newPixel;
@@ -119,7 +119,7 @@ public class OtsuBinarize {
  
     }
  
-    public static BufferedImage binarize(BufferedImage original) {
+    private static BufferedImage binarize(BufferedImage original) {
  
         int red;
         int newPixel;
