@@ -1,12 +1,7 @@
 package com.akartkam.cardsresolver;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
-import java.io.File;
-import java.io.IOException;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
-
-import javax.imageio.ImageIO;
  
 public class ImageService {
  
@@ -27,8 +22,6 @@ public class ImageService {
 	private static double getDifferencePercent(BufferedImage img1, BufferedImage img2) {
 		int w1 = img1.getWidth();
 		int h1 = img1.getHeight();
-		int w2 = img2.getWidth();
-		int h2 = img2.getHeight();
 
 		long diff = 0;
 		for (int y = 0; y < h1; y++) {

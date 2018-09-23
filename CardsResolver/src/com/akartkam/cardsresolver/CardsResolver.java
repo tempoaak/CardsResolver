@@ -1,23 +1,20 @@
+/*******************************
+ * Тестовое задание по вакансии Java разработчика
+ * в компании MembranaX 
+ * Автор: Акчурин Артур Камильевич
+ * 
+ * 
+ */
 package com.akartkam.cardsresolver;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
-import java.net.URISyntaxException;
-import java.net.URL;
-import java.net.URLDecoder;
 import java.util.Arrays;
-import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
-import java.lang.ClassLoader;
 
 import javax.imageio.ImageIO;
 
@@ -31,7 +28,7 @@ public class CardsResolver {
     //Функция получения Map с соответствующими шаблонами
     private static Map<String, BufferedImage> loadTemplates(String[] templs)  {
     	return Arrays.stream(templs).collect(Collectors
-    			             .toMap(s->s.replaceFirst("[.][^.]+$", ""), //Избавляемся от расширений
+    			             .toMap(s->s.replaceFirst("[.][^.]+$", ""), //Избавляемся от расширения в имени файла
     			            		s->{
     			            			try 
 										 { 
