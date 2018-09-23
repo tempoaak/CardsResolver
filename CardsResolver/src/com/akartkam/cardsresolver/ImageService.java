@@ -1,3 +1,4 @@
+package com.akartkam.cardsresolver;
 import java.awt.Color;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -11,11 +12,10 @@ public class ImageService {
  
   
 	public static int getCompareIndexOfSubImages(BufferedImage img1,
-			BufferedImage img2, int offsetX, int positionY, String fname) {
+			BufferedImage img2, int offsetX, int positionY) {
 		BufferedImage img11 = img1.getSubimage(offsetX, positionY,
 				img2.getWidth(), img2.getHeight());
-		img11 = ImageService.grayscale(img11);
-		img11 = ImageService.binarize(img11);
+		img11 = binarize(img11);
 		// Это для повышения точности распознавания, т.к. некоторые карты имею
 		// затененную поверхность
 		changeColor(img11, Constants.ARRAY_RGB_OF_SHADOW_CARD_SURFACE,
@@ -29,12 +29,7 @@ public class ImageService {
 		int h1 = img1.getHeight();
 		int w2 = img2.getWidth();
 		int h2 = img2.getHeight();
-		if (w1 != w2 || h1 != h2) {
-			throw new IllegalArgumentException(
-					String.format(
-							"Не совпадающие размеры сравниваемых изображений: (%d,%d) и (%d,%d)",
-							w1, h1, w2, h2));
-		}
+
 		long diff = 0;
 		for (int y = 0; y < h1; y++) {
 			for (int x = 0; x < w1; x++) {
@@ -70,55 +65,49 @@ public class ImageService {
 		img.setRGB(0, 0, w, h, arrRgb, 0, w);
 	}    
  
-
-    // Return histogram of grayscale image
-    public static int[] getHistogram(BufferedImage img1) {
-        int[] hist = IntStream.range(0, 256).map(i->0).toArray();
-        for(int i=0; i<img1.getWidth(); i++) {
-            for(int j=0; j<img1.getHeight(); j++) {
-                int red = new Color(img1.getRGB (i, j)).getRed();
-                hist[red]++;
-            }
-        }
-         return hist;
  
-    }
- 
-    // The luminance method
-    public static BufferedImage grayscale(BufferedImage original) {
+    //Функция преобразует изображения в оттенки серого
+    private static BufferedImage grayscale(BufferedImage img) {
         int alpha, red, green, blue;
         int newPixel;
  
-        BufferedImage lum = new BufferedImage(original.getWidth(), original.getHeight(), original.getType());
+        BufferedImage lum = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
  
-        for(int i=0; i<original.getWidth(); i++) {
-            for(int j=0; j<original.getHeight(); j++) {
- 
-                // Get pixels by R, G, B
-                alpha = new Color(original.getRGB(i, j)).getAlpha();
-                red = new Color(original.getRGB(i, j)).getRed();
-                green = new Color(original.getRGB(i, j)).getGreen();
-                blue = new Color(original.getRGB(i, j)).getBlue();
+        for(int i=0; i<img.getWidth(); i++) {
+            for(int j=0; j<img.getHeight(); j++) { 
+                //Разбор пикселей на цвета и прозрачность
+                alpha = new Color(img.getRGB(i, j)).getAlpha();
+                red = new Color(img.getRGB(i, j)).getRed();
+                green = new Color(img.getRGB(i, j)).getGreen();
+                blue = new Color(img.getRGB(i, j)).getBlue();
  
                 red = (int) (0.21 * red + 0.71 * green + 0.07 * blue);
-                // Return back to original format
+                //Обратно к оригиналу
                 newPixel = colorToRGB(alpha, red, red, red);
- 
-                // Write pixels into image
-                lum.setRGB(i, j, newPixel);
- 
+                lum.setRGB(i, j, newPixel); 
             }
-        }
- 
-        return lum;
- 
+        } 
+        return lum; 
     }
  
-    // Get binary treshold using Otsu's method
-    private static int treshold(BufferedImage original) {
+    //Гистограмма 
+    private static int[] getHistogram(BufferedImage img) {
+        int[] hist = IntStream.range(0, 256).map(i->0).toArray();
+        for(int i=0; i<img.getWidth(); i++) {
+            for(int j=0; j<img.getHeight(); j++) {
+                int red = new Color(img.getRGB (i, j)).getRed();
+                hist[red]++;
+            }
+        }
+        return hist;
+    }
+    
+    
+    //Получить пороговое значения для бинеаризиции
+    private static int treshold(BufferedImage img) {
  
-        int[] histogram = getHistogram(original);
-        int total = original.getHeight() * original.getWidth();
+        int[] histogram = getHistogram(img);
+        int total = img.getHeight() * img.getWidth();
  
         float sum = 0;
         for(int i=0; i<256; i++) sum += i * histogram[i];
@@ -153,21 +142,22 @@ public class ImageService {
  
     }
  
-    public static BufferedImage binarize(BufferedImage original) {
+    public static BufferedImage binarize(BufferedImage img) {
  
         int red;
         int newPixel;
+        
+        img = grayscale(img);
  
-        int threshold = treshold(original);
+        int threshold = treshold(img);
  
-        BufferedImage binarized = new BufferedImage(original.getWidth(), original.getHeight(), original.getType());
+        BufferedImage binarized = new BufferedImage(img.getWidth(), img.getHeight(), img.getType());
  
-        for(int i=0; i<original.getWidth(); i++) {
-            for(int j=0; j<original.getHeight(); j++) {
- 
-                // Get pixels
-                red = new Color(original.getRGB(i, j)).getRed();
-                int alpha = new Color(original.getRGB(i, j)).getAlpha();
+        for(int i=0; i<img.getWidth(); i++) {
+            for(int j=0; j<img.getHeight(); j++) {
+
+                red = new Color(img.getRGB(i, j)).getRed();
+                int alpha = new Color(img.getRGB(i, j)).getAlpha();
                 if(red > threshold) {
                     newPixel = 255;
                 }
@@ -184,7 +174,6 @@ public class ImageService {
  
     }
  
-    // Convert R, G, B, Alpha to standard 8 bit
     private static int colorToRGB(int alpha, int red, int green, int blue) {
  
         int newPixel = 0;

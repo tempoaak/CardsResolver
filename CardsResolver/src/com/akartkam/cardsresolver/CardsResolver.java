@@ -1,12 +1,24 @@
+package com.akartkam.cardsresolver;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
+import java.net.URISyntaxException;
+import java.net.URL;
+import java.net.URLDecoder;
+import java.util.Arrays;
+import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
+import java.lang.ClassLoader;
+
 import javax.imageio.ImageIO;
 
 public class CardsResolver {
@@ -17,40 +29,39 @@ public class CardsResolver {
     //Всего обнаружено карт во всех найденных файлах
     private static int totalNotFoundCards = 0;    
     //Функция получения Map с соответствующими шаблонами
-    private static Map<String, BufferedImage> loadTemplates(String dir)  {
-		File dirTempls = new File(dir);
-		File[] filesTempls = dirTempls.listFiles((d, n) -> n.endsWith(".png"));
-		Map<String, BufferedImage> mapTempls = 
-				    Stream.of(filesTempls).
-		                      collect(Collectors.
-		                    		  toMap(f -> f.getName().replaceFirst("[.][^.]+$", ""),
-											f -> {
-												  try 
-													 { 
-													  return ImageIO.read(f);
-													 } catch (IOException e) {
-														 throw new RuntimeException(e);  
-													 }
-												  }
-											)
-			                    	  );
-		return mapTempls;
+    private static Map<String, BufferedImage> loadTemplates(String[] templs)  {
+    	return Arrays.stream(templs).collect(Collectors
+    			             .toMap(s->s.replaceFirst("[.][^.]+$", ""), //Избавляемся от расширений
+    			            		s->{
+    			            			try 
+										 { 
+										  return ImageIO.read(CardsResolver.class.getClassLoader().getResourceAsStream(s));
+										 } catch (IOException e) {
+											 throw new RuntimeException(e);  
+										 }
+									  }
+    			            		  ));
     } 
  
-    public static void main(String[] args) throws IOException {
-    	mapRankTempls = loadTemplates(Constants.RANK_TEMPL_DIR);
-        if (mapRankTempls.isEmpty()) {
+    public static void main(String[] args) throws IOException { 
+    	
+    	mapRankTempls = loadTemplates(Constants.RANK_TEMPLS);
+        if (mapRankTempls == null || mapRankTempls.isEmpty()) {
         	System.out.println("Отсутствуют шаблоны рангов карт ");
         	System.exit(0);
         };
-        mapSuitsTempls = loadTemplates(Constants.SUITS_TEMPL_DIR);
-        if (mapRankTempls.isEmpty()) {
+        mapSuitsTempls = loadTemplates(Constants.SUITS_TEMPLS);
+        if (mapRankTempls == null || mapRankTempls.isEmpty()) {
         	System.out.println("Отсутствуют шаблоны мастей карт");
         	System.exit(0);
         }        
         String dirScan = args.length == 0? Constants.DEFAULT_INPUT_DIR
         		                         : Optional.ofNullable(args[0]).orElse(Constants.DEFAULT_INPUT_DIR);
         File[] arrlf = new File(dirScan).listFiles((d, n) -> n.endsWith(".png"));
+        if (arrlf.length == 0) {
+        	System.out.println("В папке "+dirScan+" файлов с картинками не найдено");
+        	System.exit(0);
+        }
         for (File inFile : arrlf) {
     		BufferedImage img1 = ImageIO.read(inFile);
             if (img1.getWidth()!= Constants.IMAGE_WIDTH || img1.getHeight() != Constants.IMAGE_HEIGHT){
@@ -64,11 +75,21 @@ public class CardsResolver {
                 	//обработка ранга карты
             		for(Map.Entry<String, BufferedImage> entry : mapRankTempls.entrySet()) {
                         BufferedImage img2 = entry.getValue(); 
+                        int offset = Constants.OFFSET_OF_CARD_RANK_X;
+                        String nameRank = entry.getKey();
+                        //Некоторые шаблоны могут в имени файла включать и смещение
+                        //В таком случае вместо смещения по умолчанию из имени файла выделяется
+                        //новый размер смещения для данного шаблона
+                        String[] arrSplitRank = entry.getKey().split("_");
+                        if (arrSplitRank.length == 2) {
+                        	nameRank = arrSplitRank[0];
+                        	offset = Integer.valueOf(arrSplitRank[1]);
+                        }
                         int pd = ImageService.getCompareIndexOfSubImages(img1, img2, 
-                        		Constants.ARRAY_OF_CARD_POSITION_X[cardNum]+Constants.OFFSET_OF_CARD_RANK_X,
-                        		Constants.CARD_POSITION_RANK_Y, entry.getKey());
+                        		Constants.ARRAY_OF_CARD_POSITION_X[cardNum]+offset,
+                        		Constants.CARD_POSITION_RANK_Y);
 		                if (pd <= Constants.ALLOW_RANK_SCALE){
-		                	foundRank[cardNum] = entry.getKey(); 
+		                	foundRank[cardNum] = nameRank; 
 		                }
             		}
             		//обработка масти карты
@@ -76,9 +97,7 @@ public class CardsResolver {
                         BufferedImage img2 = entry.getValue(); 
                         int pd = ImageService.getCompareIndexOfSubImages(img1, img2, 
                         		Constants.ARRAY_OF_CARD_POSITION_X[cardNum]+Constants.OFFSET_OF_CARD_SUITS_X,
-                        		Constants.CARD_POSITION_SUITS_Y, entry.getKey());
-                        //File outputfile = new File(inFile.getName()+cardNum+".gray.png");
-		        		//ImageIO.write(img11, "png", outputfile);
+                        		Constants.CARD_POSITION_SUITS_Y);
 		                if (pd <= Constants.ALLOW_SUITS_SCALE){
 		                	foundSuits[cardNum] = entry.getKey();
 		                	//Так масти распознаются точнее, то количество карт считаем по дайденным мастям
@@ -102,6 +121,5 @@ public class CardsResolver {
         System.out.printf("Общее количество распознанных карт - %d \n", totalFoundCards);
         System.out.printf("Общее количество нераспознанных карт - %d \n", totalNotFoundCards);
         System.out.println("Завершение работы.");
-    }
-
+    }    
 }
