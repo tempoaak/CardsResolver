@@ -1,11 +1,4 @@
-/*******************************
- * Тестовое задание по вакансии Java разработчика
- * в компании MembranaX 
- * Автор: Акчурин Артур Камильевич
- * 
- * 
- */
-package com.akartkam.cardsresolver;
+﻿package com.akartkam.cardsresolver;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
